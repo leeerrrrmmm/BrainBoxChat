@@ -1,4 +1,5 @@
 import cors from "cors";
+import crypto from "crypto";
 import express from "express";
 import ai from "./config/open-ai.js";
 
@@ -16,6 +17,9 @@ const MODELS = [
 
 let currentModelIndex = 0;
 
+/** In-memory store: sessionId -> { id, service, preview, lastMessageAt } */
+const sessions = new Map();
+
 function isRetryableError(error) {
   const status = error?.status ?? error?.code;
   if (status == null) return true;
@@ -27,12 +31,44 @@ app.get("/api/chat/models", (req, res) => {
   res.json({ models: MODELS, currentIndex: currentModelIndex });
 });
 
+// Список сессий для History (сортировка по lastMessageAt, новые сверху)
+app.get("/api/chat/sessions", (req, res) => {
+  const list = Array.from(sessions.values()).sort(
+    (a, b) => new Date(b.lastMessageAt) - new Date(a.lastMessageAt)
+  );
+  res.json(list);
+});
+
+app.delete("/api/chat/sessions/:id", (req, res) => {
+  sessions.delete(req.params.id);
+  res.status(204).send();
+});
+
 app.post("/api/chat", async (req, res) => {
   try {
-    const { message } = req.body ?? {};
+    const { message, sessionId: existingId, service: serviceName } = req.body ?? {};
 
     if (!message) {
       return res.status(400).json({ error: "Message is required" });
+    }
+
+    const now = new Date().toISOString();
+    const preview = String(message).slice(0, 80);
+    const service = serviceName || "Chat";
+
+    let sessionId = existingId;
+    if (sessionId && sessions.has(sessionId)) {
+      const s = sessions.get(sessionId);
+      s.preview = preview;
+      s.lastMessageAt = now;
+    } else {
+      sessionId = crypto.randomUUID();
+      sessions.set(sessionId, {
+        id: sessionId,
+        service,
+        preview,
+        lastMessageAt: now,
+      });
     }
 
     let attempts = 0;
@@ -53,7 +89,7 @@ app.post("/api/chat", async (req, res) => {
             ? response.text
             : "";
         console.log(`Model success: ${model}`);
-        return res.json({ reply: String(replyText), model });
+        return res.json({ reply: String(replyText), model, sessionId });
       } catch (err) {
         const status = err?.status ?? err?.code;
         console.error(`Model failed: ${model}`, status, err?.message ?? err);

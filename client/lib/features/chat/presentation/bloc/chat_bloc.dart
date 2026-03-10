@@ -71,18 +71,30 @@ class ChatBloc extends Bloc<ChatBlocEvent, ChatBlocState> {
     );
 
     try {
-      final aiMessage = await sendMessageUseCase(event.message);
+      final sessionId = state.sessionIdsByService[service];
+      final aiMessage = await sendMessageUseCase(
+        event.message,
+        service: service,
+        sessionId: sessionId,
+      );
       log('ChatBloc: AI reply received: "${aiMessage.content}"');
 
       final afterList = state.chats[service] ?? [];
       final updatedChats = Map<String, List<ChatMessageEntity>>.from(state.chats)
         ..[service] = [...afterList, aiMessage];
 
+      final newSessionIds = Map<String, String>.from(state.sessionIdsByService);
+      final sid = aiMessage.sessionId;
+      if (sid != null && sid.isNotEmpty) {
+        newSessionIds[service] = sid;
+      }
+
       emit(
         state.copyWith(
           chats: updatedChats,
           loadingService: null,
           errorMessage: null,
+          sessionIdsByService: newSessionIds,
         ),
       );
     } catch (e, st) {

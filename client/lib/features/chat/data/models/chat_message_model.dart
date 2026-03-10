@@ -10,11 +10,13 @@ class ChatMessageModel extends ChatMessageEntity {
     required super.role,
     required super.createdAt,
     super.modelId,
+    super.sessionId,
   });
 
-  /// FromJson: backend returns `reply` and optional `model` (model that answered).
+  /// FromJson: backend returns `reply`, optional `model`, optional `sessionId`.
   factory ChatMessageModel.fromJson(Map<String, dynamic> json) {
     final modelId = json['model'] as String?;
+    final sessionId = json['sessionId'] as String?;
 
     return ChatMessageModel(
       id: const Uuid().v4(),
@@ -22,6 +24,7 @@ class ChatMessageModel extends ChatMessageEntity {
       role: ChatMessageEntityRole.assistant,
       createdAt: DateTime.now(),
       modelId: modelId,
+      sessionId: sessionId,
     );
   }
 }

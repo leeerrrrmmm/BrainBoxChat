@@ -11,7 +11,15 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   ChatRemoteDataSourceImpl(this.dio);
 
   @override
-  Future<Map<String, dynamic>> sendMessage(String message) async {
+  Future<Map<String, dynamic>> sendMessage(
+    String message, {
+    String? service,
+    String? sessionId,
+  }) async {
+    final data = <String, dynamic>{'message': message};
+    if (service != null && service.isNotEmpty) data['service'] = service;
+    if (sessionId != null && sessionId.isNotEmpty) data['sessionId'] = sessionId;
+
     final response = await dio.post(
       '${AppConstants.apiBaseUrl}/chat',
       options: Options(
@@ -19,7 +27,7 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
           'Content-Type': 'application/json',
         },
       ),
-      data: {'message': message},
+      data: data,
     );
 
     return response.data as Map<String, dynamic>;

@@ -12,8 +12,11 @@ class ChatMessageEntity {
   /// Message created at
   final DateTime createdAt;
 
-  /// Model that produced this message (e.g. gemini-1.5-flash). Null for user messages. /
+  /// Model that produced this message (e.g. gemini-1.5-flash). Null for user messages.
   final String? modelId;
+
+  /// Session id from the server (for history). Null for user messages.
+  final String? sessionId;
 
   /// Constructor for the Message entity
   const ChatMessageEntity({
@@ -22,6 +25,7 @@ class ChatMessageEntity {
     required this.role,
     required this.createdAt,
     this.modelId,
+    this.sessionId,
   });
 }
 

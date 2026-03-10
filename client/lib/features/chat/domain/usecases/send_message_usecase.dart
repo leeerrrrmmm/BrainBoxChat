@@ -10,7 +10,15 @@ class SendMessageUseCase {
   SendMessageUseCase(this.repository);
 
   /// Call the send message use case
-  Future<ChatMessageEntity> call(String message) {
-    return repository.sendMessage(message);
+  Future<ChatMessageEntity> call(
+    String message, {
+    String? service,
+    String? sessionId,
+  }) {
+    return repository.sendMessage(
+      message,
+      service: service,
+      sessionId: sessionId,
+    );
   }
 }
